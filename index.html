@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>糖尿病控制不良評估</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=2.0" />
   </head>
   <body>
     <main class="app-shell">
@@ -12,90 +12,147 @@
         <div>
           <p class="eyebrow">Diabetes Follow-up Evaluation</p>
           <h1>糖尿病控制不良評估與追蹤</h1>
+          <p class="save-status" id="saveStatus">資料只存在這台電腦的瀏覽器</p>
         </div>
         <div class="top-actions">
-          <button id="saveBtn" class="tool-button" type="button" title="儲存到本機瀏覽器">儲存</button>
-          <button id="exportBtn" class="tool-button" type="button" title="匯出 CSV">匯出</button>
+          <button id="newBtn" class="tool-button" type="button" title="清除目前資料，開始新病人">新病人</button>
+          <button id="exportBtn" class="tool-button" type="button" title="匯出 CSV（可用 Excel 開啟）">匯出 CSV</button>
+          <button id="backupBtn" class="tool-button" type="button" title="下載完整資料備份（JSON），之後可匯入還原">備份</button>
+          <label class="tool-button" title="從備份檔（JSON）還原">
+            匯入
+            <input id="importInput" type="file" accept="application/json,.json" hidden />
+          </label>
+          <button id="printBtn" class="tool-button" type="button">列印</button>
           <a class="tool-button ghost" href="糖尿病控制不良原因評估表_協作追蹤評值版.xlsx" download>下載 Excel</a>
         </div>
       </header>
 
+      <nav class="section-nav" aria-label="區段">
+        <a href="#sec-patient">1 基本資料</a>
+        <a href="#sec-causes">2 原因檢核</a>
+        <a href="#sec-actions">3 改善措施</a>
+        <a href="#sec-roles">4 跨職類協作</a>
+        <a href="#sec-follow">5 追蹤紀錄</a>
+        <a href="#sec-score">6 評值系統</a>
+      </nav>
+
       <section class="summary-band" aria-label="評估摘要">
         <div class="summary-item">
           <span>總分</span>
-          <strong id="totalScore">0.0</strong>
+          <strong id="totalScore">—</strong>
+          <small id="scoreProgress">0/5 面向已評分</small>
         </div>
         <div class="summary-item">
           <span>等第</span>
           <strong id="gradeText">未評分</strong>
         </div>
         <div class="summary-item">
-          <span>最新改變</span>
-          <strong id="latestChange">無資料</strong>
+          <span>最近 HbA1c</span>
+          <strong id="latestA1c">無資料</strong>
+          <small id="a1cNote"></small>
         </div>
         <div class="summary-item">
-          <span>後續評估日</span>
+          <span>最新改變</span>
+          <strong id="latestChange">無資料</strong>
+          <small id="latestChangeDate"></small>
+        </div>
+        <div class="summary-item">
+          <span>下次評估日</span>
           <strong id="nextDate">未填寫</strong>
+          <small id="nextDateNote"></small>
         </div>
       </section>
 
-      <div class="layout-grid">
-        <section class="panel patient-panel">
-          <div class="panel-title">
-            <h2>基本資料</h2>
-          </div>
-          <form id="patientForm" class="form-grid">
-            <label>
-              病人姓名
-              <input id="patientName" name="patientName" autocomplete="off" />
-            </label>
-            <label>
-              病歷號
-              <input id="chartNo" name="chartNo" autocomplete="off" />
-            </label>
-            <label>
-              初次評估日期
-              <input id="initialDate" name="initialDate" type="date" />
-            </label>
-            <label>
-              預定後續評估日
-              <input id="plannedFollowDate" name="plannedFollowDate" type="date" />
-            </label>
-            <label>
-              基準 HbA1c (%)
-              <input id="baselineA1c" name="baselineA1c" type="number" min="0" step="0.1" />
-            </label>
-            <label>
-              目標 HbA1c (%)
-              <input id="targetA1c" name="targetA1c" type="number" min="0" step="0.1" />
-            </label>
-            <label class="wide">
-              主要問題
-              <textarea id="primaryIssue" name="primaryIssue" rows="3"></textarea>
-            </label>
-            <label class="wide">
-              醫師初評
-              <textarea id="doctorInitial" name="doctorInitial" rows="3"></textarea>
-            </label>
-            <label class="wide">
-              共同照護目標
-              <textarea id="careGoal" name="careGoal" rows="3"></textarea>
-            </label>
-          </form>
-        </section>
-
-        <section class="panel score-panel">
-          <div class="panel-title">
-            <h2>評值系統</h2>
-          </div>
-          <div id="scoreRows" class="score-list"></div>
-          <div class="decision-box" id="decisionText">請填入各面向評分。</div>
-        </section>
-      </div>
-
-      <section class="panel collaboration-panel">
+      <section class="panel" id="sec-patient">
         <div class="panel-title">
-          <h2>跨職類協作</h2>
+          <h2><span class="step">1</span>基本資料與目標</h2>
+        </div>
+        <form id="patientForm" class="form-grid" onsubmit="return false">
+          <label>
+            病人姓名
+            <input id="patientName" name="patientName" autocomplete="off" />
+          </label>
+          <label>
+            病歷號
+            <input id="chartNo" name="chartNo" autocomplete="off" />
+          </label>
+          <label>
+            評估人員
+            <input id="assessor" name="assessor" autocomplete="off" />
+          </label>
+          <label>
+            糖尿病類型
+            <select id="dmType" name="dmType"></select>
+          </label>
+          <label>
+            初次評估日期
+            <input id="initialDate" name="initialDate" type="date" />
+          </label>
+          <label>
+            預定後續評估日
+            <input id="plannedFollowDate" name="plannedFollowDate" type="date" />
+          </label>
+          <label>
+            基準 HbA1c (%)
+            <input id="baselineA1c" name="baselineA1c" type="number" min="3" max="20" step="0.1" inputmode="decimal" />
+          </label>
+          <label>
+            目標 HbA1c (%)
+            <input id="targetA1c" name="targetA1c" type="number" min="5" max="10" step="0.1" inputmode="decimal" placeholder="例：7.0" />
+          </label>
+          <label class="wide">
+            目前治療方式
+            <input id="treatment" name="treatment" autocomplete="off" placeholder="例：metformin 1000 mg BID + basal insulin 18 U HS" />
+          </label>
+          <label class="half">
+            主要問題
+            <textarea id="primaryIssue" name="primaryIssue" rows="2"></textarea>
+          </label>
+          <label class="half">
+            醫師初評
+            <textarea id="doctorInitial" name="doctorInitial" rows="2"></textarea>
+          </label>
+          <label class="wide">
+            共同照護目標
+            <textarea id="careGoal" name="careGoal" rows="2"></textarea>
+          </label>
+        </form>
+        <p class="field-warning" id="patientWarning" hidden></p>
+      </section>
+
+      <section class="panel" id="sec-causes">
+        <div class="panel-title">
+          <h2><span class="step">2</span>常見控制不良原因檢核 <small class="count-chip" id="causeCount"></small></h2>
+          <p class="panel-hint">逐項判斷「是否存在」；選「是」才需填改善計畫與完成狀態。</p>
+        </div>
+        <div id="causeList" class="cause-list"></div>
+      </section>
+
+      <section class="panel" id="sec-actions">
+        <div class="panel-title">
+          <h2><span class="step">3</span>改善措施與追蹤</h2>
+          <p class="panel-hint">依原因檢核結果，標示＊的項目為已勾選原因對應的措施。</p>
+        </div>
+        <div class="table-wrap">
+          <table class="actions-table">
+            <thead>
+              <tr>
+                <th>改善項目</th>
+                <th>具體措施</th>
+                <th>負責人員</th>
+                <th>預定完成／追蹤時間</th>
+                <th>完成狀態</th>
+                <th>備註</th>
+              </tr>
+            </thead>
+            <tbody id="actionBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="sec-roles">
+        <div class="panel-title">
+          <h2><span class="step">4</span>跨職類協作</h2>
           <button id="addRoleBtn" class="secondary-button" type="button">新增職類</button>
         </div>
         <div class="table-wrap">
@@ -104,13 +161,14 @@
               <tr>
                 <th>職類</th>
                 <th>人員</th>
+                <th>評估重點</th>
                 <th>主要發現</th>
                 <th>改善建議</th>
                 <th>完成狀態</th>
                 <th>醫師評論</th>
                 <th>後續評估日期</th>
                 <th>改變情況</th>
-                <th></th>
+                <th><span class="sr-only">刪除</span></th>
               </tr>
             </thead>
             <tbody id="roleBody"></tbody>
@@ -118,9 +176,9 @@
         </div>
       </section>
 
-      <section class="panel follow-panel">
+      <section class="panel" id="sec-follow">
         <div class="panel-title">
-          <h2>追蹤紀錄</h2>
+          <h2><span class="step">5</span>追蹤紀錄</h2>
           <button id="addFollowBtn" class="secondary-button" type="button">新增追蹤</button>
         </div>
         <div class="table-wrap">
@@ -130,23 +188,46 @@
                 <th>本次評估日期</th>
                 <th>後續評估日期</th>
                 <th>追蹤方式</th>
-                <th>空腹血糖</th>
-                <th>飯後血糖</th>
-                <th>HbA1c</th>
+                <th>空腹血糖<br /><small>mg/dL</small></th>
+                <th>飯後血糖<br /><small>mg/dL</small></th>
+                <th>HbA1c<br /><small>%</small></th>
                 <th>改變情況</th>
                 <th>達成情形</th>
                 <th>下一步調整</th>
                 <th>醫師評論</th>
                 <th>記錄者</th>
-                <th></th>
+                <th><span class="sr-only">刪除</span></th>
               </tr>
             </thead>
             <tbody id="followBody"></tbody>
           </table>
         </div>
+        <p class="field-warning" id="followWarning" hidden></p>
       </section>
+
+      <section class="panel score-panel" id="sec-score">
+        <div class="panel-title">
+          <h2><span class="step">6</span>評值系統</h2>
+          <p class="panel-hint">依追蹤後的改善情況給 0–5 分；5 個面向都評分後才計算等第。</p>
+        </div>
+        <ol class="rubric" aria-label="評分標準">
+          <li><b>0</b>未執行或無資料</li>
+          <li><b>1</b>極少執行</li>
+          <li><b>2</b>部分執行但未穩定</li>
+          <li><b>3</b>達基本要求</li>
+          <li><b>4</b>多數目標達成</li>
+          <li><b>5</b>完全達成且可維持</li>
+        </ol>
+        <div id="scoreRows" class="score-list"></div>
+        <div class="decision-box" id="decisionText">請填入各面向評分。</div>
+        <p class="grade-key">等第：≥85 A 明顯改善 ・ 70–84 B 部分改善 ・ 60–69 C 需加強 ・ &lt;60 D 需重新評估</p>
+      </section>
+
+      <footer class="page-foot">
+        資料自動儲存在本機瀏覽器（不會上傳）；在共用電腦使用完畢請按「新病人」清除。含個資資料請依院內病歷與個資規範保存。
+      </footer>
     </main>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="app.js"></script>
+    <script src="app.js?v=2.0"></script>
   </body>
 </html>
